@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Deploy CNN model</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+
+  <style>
+        body {
+            font: 20px Montserrat, sans-serif;
+            line-height: 1.8;
+            color: #f5f6f7;
+        }
+        p {font-size: 16px;}
+        .margin {margin-bottom: 45px;}
+        .bg-1, .thumbnail { 
+            background-color: #1abc9c !important; /* Green */
+            color: #ffffff;
+            border: none !important;
+        }
+        .bg-2 { 
+            background-color: #474e5d; /* Dark Blue */
+            color: #ffffff;
+        }
+        .bg-3 { 
+            background-color: #ffffff; /* White */
+            color: #555555;
+        }
+        .bg-4 { 
+            background-color: #2f2f2f; /* Black Gray */
+            color: #fff;
+        }
+        .container-fluid {
+            padding-top: 70px;
+            padding-bottom: 70px;
+        }
+        .navbar {
+            padding-top: 15px;
+            padding-bottom: 15px;
+            border: 0;
+            border-radius: 0;
+            margin-bottom: 0;
+            font-size: 12px;
+            letter-spacing: 5px;
+        }
+        .navbar-nav  li a:hover {
+            color: #1abc9c !important;
+        }
+        canvas{
+            margin: 0 auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-default">
+        <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>                        
+            </button>
+            <a class="navbar-brand" href="#">ANN - Model Deployment</a>
+        </div>
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav navbar-right">
+            <li><a href="https://www.researchgate.net/profile/Long-Ang-Lim" target="_blank">WHO</a></li>
+            <li><a href="#">WHAT</a></li>
+            <li><a href="#">WHERE</a></li>
+            </ul>
+        </div>
+        </div>
+    </nav>
+  
+  <!-- First Container -->
+    <div class="container-fluid bg-1 text-center">
+        <h3 class="margin">Please upload an image to predict.</h3>
+
+        <form action="/" method="POST" role="form" enctype="multipart/form-data" id="form1">
+            <label class="btn btn-lg btn-primary mb-4" for="my-file-selector">
+                <input id="my-file-selector" name="my-file-selector" type="file" 
+                style="display:none;" accept="image/*" onchange="my_prediction(this)">
+                Upload and Predict
+            </label>
+        </form>
+
+        <div class="thumbnail">
+            <img id="ip_img" class="img-responsive" style="display:inline" width="350" height="350">
+        </div>
+        
+        <h3 class="mt-4">Our AI model thinks that this is: <label id="my_output">...</label></h3>
+
+        <canvas id="myChart" style="width:100%;max-width:700px"></canvas>
+    
+    </div>
+
+  <!-- Footer -->
+  <footer class="container-fluid bg-4 text-center">
+    <p>Artificial Intelligence - University of Puthisastra</p> 
+  </footer>
+
+
+    <script>
+        function my_prediction(input){
+                if (input.name=="my-file-selector"){
+                    if (input.files && input.files[0]) {
+                        var reader = new FileReader();
+                        reader.onload = function (e){
+                            $('#ip_img').attr('src', e.target.result);//.width(360).height(352);
+                            call_ajax_to_predict("my-file-selector");
+                            e.preventDefault();
+                        };
+                        reader.readAsDataURL(input.files[0]);
+                    }
+                }else{
+                    console.log("errr")
+                }
+        }
+
+        function plot_barchart(class_label, class_proba){
+
+            new Chart("myChart", {
+                type: "bar",
+                data: {
+                    labels: class_label,
+                    datasets: [{
+                        backgroundColor: "blue",
+                        data: class_proba
+                    }]
+                },
+                options: {
+                    legend: {display: false},
+                    title: {
+                        display: true,
+                        text: "Probability of the model prediction."
+                    }
+                }
+            });
+        }
+
+        function call_ajax_to_predict(file_id){
+                var fileInput = document.getElementById(file_id);
+                var myFormData = new FormData();
+                if (file_id=="my-file-selector"){
+                    file_obj = fileInput.files[0]
+                    //console.log(file_obj);
+
+                }
+
+                myFormData.append('file', file_obj);
+                
+                $.ajax({
+                        type        : 'POST', // define the type of HTTP verb we want to use (POST for our form)
+                        url         : '/', // the url where we want to POST
+                        data        : myFormData, // our data object
+                        dataType    : 'json', // what type of data do we expect back from the server
+                        //encode          : true,
+                        //contentType: "multipart/form-data" //contentType: 'application/json;charset=UTF-8'
+                        //enctype : "multipart/form-data"
+                        processData: false,
+                        contentType: false
+
+                }).done(function(response) {
+
+                    console.log(response);
+
+                    if (response.success){
+                        $("#my_output").text(response.label);
+                        plot_barchart(response.class_label, response.class_proba);
+                    }
+                });
+        }
+    </script>
+
+</body>
+</html>
